@@ -1,0 +1,35 @@
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ===== Python(取數腳本) =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# ===== 編輯器 / IDE =====
+.vscode/
+.idea/
+*.swp
+*~
+.history/
+
+# ===== 暫存 / log =====
+*.log
+*.tmp
+tmp/
+
+# ===== 憑證 / 機密(防呆:token 永不入庫) =====
+# widget 本身不存這些,但避免任何人不小心把 token / 憑證檔加進來
+.env
+.env.*
+auth.json
+*credentials*.json
+*.key
+*.pem
+secrets.*

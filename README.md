@@ -46,8 +46,8 @@ cp -R ~/Desktop/usage_monitor/codex-claude-usage.widget \
 ## 使用
 
 - **切換樣式**:滑鼠移到 widget 上,上方會浮出 template 切換列,點任一個即時切換,選擇記在 `localStorage`(key `ccu.style`)。
-- **切換 provider**:點 widget 內的分頁(Codex / Claude)。
-- **桌面位置**:改 `codex-claude-usage.widget/index.jsx` 最上方的 `className`(`top` / `right` 等)。
+- **切換 provider**:點 widget 內的分頁(Codex / Claude),或點最右的 **ALL** 一次列出全部 provider(堆疊顯示,各有名稱 + 顏色點)。
+- **拖曳位置**:滑到 widget 上,左上角出現 **⠿ 握把**,按住拖到桌面任意處,放開自動記住(`localStorage` key `ccu.pos`);也可改 `index.jsx` 的 `className` 設定初始位置。
 - **刷新頻率**:改 `index.jsx` 的 `refreshFrequency`(毫秒,預設 `60000`)。
 
 ### 九種樣式

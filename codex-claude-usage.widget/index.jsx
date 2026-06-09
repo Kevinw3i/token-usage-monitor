@@ -13,8 +13,8 @@ export const command =
 
 // widget 在桌面的位置(可自行調整 top/right)
 export const className = `
-  top: 40px;
-  right: 40px;
+  top: 0;
+  left: 0;
   z-index: 0;
 `;
 
@@ -122,14 +122,26 @@ function animate(el){
 const Ctl = (()=>{
   let root, state={styleId:(typeof localStorage!=='undefined'&&localStorage.getItem('ccu.style'))||'neon', pi:0, data:DEMO};
   const provs=()=>(state.data.providers||[]).map(p=>({...p,color:p.color||COLORS[p.name]||'#888'}));
-  function tabs(kind){return provs().map((q,i)=>kind==='dots'
-    ?`<button class="dot ${i===state.pi?'on':''}" data-idx="${i}" title="${q.name}"></button>`
-    :`<button class="tab ${i===state.pi?'on':''}" data-idx="${i}">${q.name}</button>`).join('')}
+  function tabs(kind){
+    var t=provs().map((q,i)=>kind==='dots'
+      ?`<button class="dot ${i===state.pi?'on':''}" data-idx="${i}" title="${q.name}"></button>`
+      :`<button class="tab ${i===state.pi?'on':''}" data-idx="${i}">${q.name}</button>`).join('');
+    var a=state.pi==='all'?'on':'';
+    t+=kind==='dots'?`<button class="dot dot-all ${a}" data-idx="all">ALL</button>`:`<button class="tab ${a}" data-idx="all">ALL</button>`;
+    return t;
+  }
   function build(){
     if(!root)return;
-    const P=provs(); if(state.pi>=P.length)state.pi=0;
+    const P=provs();
     const st=STYLES.find(s=>s.id===state.styleId)||STYLES[3];
-    const widget=st.shell(`<div class="tabs">${tabs(st.tab)}</div>`,`<div class="bd">${st.tpl(P[state.pi])}</div>`);
+    let body;
+    if(state.pi==='all'){
+      body=P.map(p=>`<div class="ccu-allitem"><div class="ccu-allname"><i style="background:${p.color}"></i>${p.name}</div>${st.tpl(p)}</div>`).join('');
+    }else{
+      if(state.pi>=P.length)state.pi=0;
+      body=st.tpl(P[state.pi]);
+    }
+    const widget=st.shell(`<div class="tabs">${tabs(st.tab)}</div>`,`<div class="bd">${body}</div>`);
     const sw=`<div class="ccu-switch">`+STYLES.map(s=>`<button class="ccu-sw ${s.id===state.styleId?'on':''}" data-style="${s.id}">${s.name}</button>`).join('')
       +(state.data.demo?`<span class="ccu-demo">DEMO</span>`:'')+`</div>`;
     root.innerHTML=sw+widget;
@@ -138,20 +150,38 @@ const Ctl = (()=>{
   return {
     init(el){root=el;root.onclick=e=>{
       const s=e.target.closest('[data-style]');if(s){state.styleId=s.dataset.style;try{localStorage.setItem('ccu.style',state.styleId)}catch(_){}build();return}
-      const p=e.target.closest('[data-idx]');if(p){state.pi=+p.dataset.idx;build();return}
+      const p=e.target.closest('[data-idx]');if(p){var v=p.dataset.idx;state.pi=(v==='all')?'all':+v;build();return}
     };build();},
     setData(o){try{state.data=(typeof o==='string'?JSON.parse(o):o)||DEMO}catch(e){state.data=DEMO}build();}
   };
 })();
+function initDrag(host, handle){
+  try{
+    var p=JSON.parse(localStorage.getItem('ccu.pos')||'null');
+    if(p){host.style.left=p.left+'px';host.style.top=p.top+'px';}
+    else{host.style.left=Math.max(8,window.innerWidth-360)+'px';host.style.top='40px';}
+  }catch(e){host.style.left='40px';host.style.top='40px';}
+  var on=false,sx,sy,ox,oy;
+  handle.addEventListener('mousedown',function(e){on=true;sx=e.clientX;sy=e.clientY;ox=parseInt(host.style.left)||0;oy=parseInt(host.style.top)||0;e.preventDefault();});
+  window.addEventListener('mousemove',function(e){if(!on)return;host.style.left=(ox+e.clientX-sx)+'px';host.style.top=(oy+e.clientY-sy)+'px';});
+  window.addEventListener('mouseup',function(){if(!on)return;on=false;try{localStorage.setItem('ccu.pos',JSON.stringify({left:parseInt(host.style.left),top:parseInt(host.style.top)}));}catch(e){}});
+}
 if (typeof window!=='undefined') {
   window.__ccuCtl = Ctl;
-  window.__ccuBoot = ()=>{const r=document.getElementById('ccu-root');if(r)Ctl.init(r)};
+  window.__ccuBoot = ()=>{
+    var host=document.querySelector('.ccu-host'), handle=document.querySelector('.ccu-drag'), r=document.getElementById('ccu-root');
+    if(host&&handle&&!host.__dragInit){initDrag(host,handle);host.__dragInit=true;}
+    if(r)Ctl.init(r);
+  };
 }
 
 // ---------- 樣式表(switcher + 九個 widget + 動畫) ----------
 const STYLE_CSS = `
 @property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
-.ccu-host{display:inline-block;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.ccu-host{position:fixed;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.ccu-drag{position:absolute;top:-6px;left:-6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background:rgba(18,19,26,.7);border:1px solid rgba(255,255,255,.15);border-radius:7px;cursor:grab;opacity:0;transition:opacity .2s;z-index:10;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);-webkit-user-select:none;user-select:none}
+.ccu-host:hover .ccu-drag{opacity:.85}
+.ccu-drag:active{cursor:grabbing}
 .ccu-switch{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;padding:4px;max-width:340px;background:rgba(18,19,26,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);border-radius:11px;opacity:.32;transition:opacity .25s}
 .ccu-host:hover .ccu-switch{opacity:1}
 .ccu-sw{font:600 10px/1 -apple-system,sans-serif;color:#9aa0aa;background:transparent;border:0;border-radius:7px;padding:6px 8px;cursor:pointer;transition:.15s;white-space:nowrap}
@@ -162,6 +192,14 @@ const STYLE_CSS = `
 .bd>*:nth-child(2){animation-delay:.07s}.bd>*:nth-child(3){animation-delay:.14s}.bd>*:nth-child(4){animation-delay:.21s}
 @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .num{font:inherit;font-style:inherit;font-weight:inherit}
+.ccu-allitem + .ccu-allitem{margin-top:18px}
+.ccu-allname{display:flex;align-items:center;gap:6px;font-weight:700;font-size:11px;line-height:1;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin:0 0 9px}
+.ccu-allname i{width:7px;height:7px;border-radius:9px;display:inline-block;flex:none}
+.w-glass .dot-all,.w-lux .dot-all{width:auto;height:auto;line-height:1;font-weight:700;font-size:8px;border-radius:9px;padding:3px 7px}
+.w-glass .dot-all{color:#fff;background:rgba(255,255,255,.3)}
+.w-glass .dot-all.on{background:#fff;color:#5b53ff}
+.w-lux .dot-all{color:#caa86a;background:#3a3d45}
+.w-lux .dot-all.on{background:#caa86a;color:#15161a}
 .w-term{width:332px;font-family:'JetBrains Mono',monospace;background:#04150b;color:#3dff85;border:1px solid #0c3d22;border-radius:8px;padding:14px 16px 13px;position:relative;overflow:hidden;box-shadow:0 0 0 1px #000,0 22px 50px rgba(0,0,0,.6),inset 0 0 60px rgba(0,255,120,.05);animation:flick 6s steps(40) infinite}
 @keyframes flick{0%,96%,100%{opacity:1}97%{opacity:.82}98%{opacity:.96}99%{opacity:.88}}
 .w-term::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(rgba(0,0,0,0) 0 2px,rgba(0,0,0,.28) 2px 4px);mix-blend-mode:multiply;animation:scan 7s linear infinite}
@@ -318,7 +356,7 @@ const STYLE_CSS = `
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 `;
 
-const SHELL = `<style>${STYLE_CSS}</style><div class="ccu-host"><div id="ccu-root"></div></div><img src="/__ccu_boot__" style="display:none" onerror="window.__ccuBoot&&window.__ccuBoot()">`;
+const SHELL = `<style>${STYLE_CSS}</style><div class="ccu-host"><div class="ccu-drag" title="拖曳移動位置">⠿</div><div id="ccu-root"></div></div><img src="/__ccu_boot__" style="display:none" onerror="window.__ccuBoot&&window.__ccuBoot()">`;
 
 export const render = ({ output }) => {
   if (typeof window !== 'undefined') {
